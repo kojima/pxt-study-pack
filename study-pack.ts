@@ -1,4 +1,4 @@
-//% color="#AA278D" block="Studyパック"
+//% color="#AA278D" icon="\uf303" block="Studyパック"
 namespace studyPack {
     class CustomDialog extends game.Dialog {
         isFirst: boolean;
