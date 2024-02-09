@@ -67,17 +67,14 @@ namespace studyPack {
      * @param layout The layout to use for the dialog box
      */
     //% blockId=study_pack_show_texts group="StudyPacks"
-    //% block="show long texts %array %layout || with scenes %scenes"
+    //% block="show long texts %array %layout"
     //% array.shadow="lists_create_with"
     //% array.defl="text"
-    //% scenes.shadow="lists_create_with"
-    //% scenes.defl="background_image_picker"
-    //% expandableArgumentMode="toggle"
-    export function showTexts<T>(array: T[], layout: DialogLayout, scenes?: Image[]) {
-        const strs = array.map((e) => console.inspect(e));
+    export function showTexts<T>(array: T[], layout: DialogLayout) {
+        //const strs = array.map((e) => console.inspect(e));
         controller._setUserEventsEnabled(false);
-        //game.pushScene();
-        //game.currentScene().flags |= scene.Flag.SeeThrough;
+        game.pushScene();
+        game.currentScene().flags |= scene.Flag.SeeThrough;
 
         let width: number;
         let height: number;
@@ -123,26 +120,30 @@ namespace studyPack {
                 break;
         }
 
-        const fetchStringElement = (dialog: CustomDialog, strs: string[], index: number, diff: number) => {
-            index += diff;
-            let str = strs[index];
-            while (str !== undefined && !(str.slice(0, 2) !== '__' && str.slice(-2) !== '__')) {
-                const sceneNumber = parseInt(str.slice(2, -2));
-                if (scenes && sceneNumber >= 1 && sceneNumber <= scenes.length) {
-                    scene.setBackgroundImage(scenes[sceneNumber - 1]);
-                }
-                index += diff;
-                str = strs[index];
-            }
-            return {str: str, index: index};
-        };
-
         const dialog = new CustomDialog(width, height);
         const s = sprites.create(dialog.image, -1);
         s.top = top;
         s.left = left;
+        s.z = 10;
+        let sceneSprite: Sprite | null = null;
 
-        let fetchedData = fetchStringElement(dialog, strs, -1, 1);
+        const fetchStringElement = (dialog: CustomDialog, strs: T[], index: number, diff: number) => {
+            index += diff;
+            let str = strs[index];
+            while (str !== undefined && typeof str !== 'string') {
+                const image = (str as Object) as Image;
+                index += diff;
+                str = strs[index];
+                if (sceneSprite) sceneSprite.destroy();
+                sceneSprite = sprites.create(image, -1);
+                sceneSprite.top = 0;
+                sceneSprite.left = 0;
+                sceneSprite.z = 1;
+            }
+            return {str: str, index: index};
+        };
+
+        let fetchedData = fetchStringElement(dialog, array, -1, 1);
         fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
         let pressed = true;
         let done = false;
@@ -158,7 +159,7 @@ namespace studyPack {
                     dialog.nextPage();
                     dialog.isFirst = false;
                 } else {
-                    fetchedData = fetchStringElement(dialog, strs, fetchedData.index, 1);
+                    fetchedData = fetchStringElement(dialog, array, fetchedData.index, 1);
                     if (fetchedData.str) {
                         dialog.isFirst = false;
                         fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
@@ -181,7 +182,7 @@ namespace studyPack {
                     dialog.prevPage();
                     dialog.isFirst = dialog.chunkIndex === 0;
                 } else if (fetchedData.index > 0) {
-                    fetchedData = fetchStringElement(dialog, strs, fetchedData.index, -1);
+                    fetchedData = fetchStringElement(dialog, array, fetchedData.index, -1);
                     fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
                     dialog.chunkIndex = dialog.chunks.length - 1;
                     dialog.isFirst = fetchedData.index === 0 && dialog.chunkIndex === 0;
