@@ -67,14 +67,17 @@ namespace studyPack {
      * @param layout The layout to use for the dialog box
      */
     //% blockId=study_pack_show_texts group="StudyPacks"
-    //% block="show long texts %array %layout"
+    //% block="show long texts %array %layout || with scenes %scenes"
     //% array.shadow="lists_create_with"
     //% array.defl="text"
-    export function showTexts<T>(array: T[], layout: DialogLayout) {
+    //% scenes.shadow="lists_create_with"
+    //% scenes.defl="background_image_picker"
+    //% expandableArgumentMode="toggle"
+    export function showTexts<T>(array: T[], layout: DialogLayout, scenes?: Image[]) {
         const strs = array.map((e) => console.inspect(e));
         controller._setUserEventsEnabled(false);
-        game.pushScene();
-        game.currentScene().flags |= scene.Flag.SeeThrough;
+        //game.pushScene();
+        //game.currentScene().flags |= scene.Flag.SeeThrough;
 
         let width: number;
         let height: number;
@@ -120,13 +123,27 @@ namespace studyPack {
                 break;
         }
 
+        const fetchStringElement = (dialog: CustomDialog, strs: string[], index: number, diff: number) => {
+            index += diff;
+            let str = strs[index];
+            while (str !== undefined && !(str.slice(0, 2) !== '__' && str.slice(-2) !== '__')) {
+                const sceneNumber = parseInt(str.slice(2, -2));
+                if (scenes && sceneNumber >= 1 && sceneNumber <= scenes.length) {
+                    scene.setBackgroundImage(scenes[sceneNumber - 1]);
+                }
+                index += diff;
+                str = strs[index];
+            }
+            return {str: str, index: index};
+        };
+
         const dialog = new CustomDialog(width, height);
         const s = sprites.create(dialog.image, -1);
         s.top = top;
         s.left = left;
 
-        let index = 0;
-        dialog.setText(strs[index])
+        let fetchedData = fetchStringElement(dialog, strs, -1, 1);
+        fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
         let pressed = true;
         let done = false;
 
@@ -141,11 +158,10 @@ namespace studyPack {
                     dialog.nextPage();
                     dialog.isFirst = false;
                 } else {
-                    index++;
-                    const str = strs[index];
-                    if (str) {
+                    fetchedData = fetchStringElement(dialog, strs, fetchedData.index, 1);
+                    if (fetchedData.str) {
                         dialog.isFirst = false;
-                        dialog.setText(str);
+                        fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
                     }
                     else {
                         scene.setBackgroundImage(null); // GC it
@@ -164,11 +180,11 @@ namespace studyPack {
                 if (dialog.hasPrev()) {
                     dialog.prevPage();
                     dialog.isFirst = dialog.chunkIndex === 0;
-                } else if (index > 0) {
-                    index--;
-                    dialog.setText(strs[index]);
+                } else if (fetchedData.index > 0) {
+                    fetchedData = fetchStringElement(dialog, strs, fetchedData.index, -1);
+                    fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
                     dialog.chunkIndex = dialog.chunks.length - 1;
-                    dialog.isFirst = index === 0 && dialog.chunkIndex === 0;
+                    dialog.isFirst = fetchedData.index === 0 && dialog.chunkIndex === 0;
                     dialog.update();
                 }
             }
