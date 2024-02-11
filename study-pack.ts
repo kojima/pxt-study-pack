@@ -2,9 +2,11 @@
 namespace studyPack {
     class CustomDialog extends game.Dialog {
         isFirst: boolean;
+        prevCursor: Image;
 
-        constructor(width: number, height: number, frame?: Image, font?: image.Font, cursor?: Image) {
+        constructor(width: number, height: number, frame?: Image, font?: image.Font, cursor?: Image, prevCursor?: Image) {
             super(width, height, frame, font, cursor);
+            this.prevCursor = prevCursor;
             this.isFirst = true;
         }
 
@@ -16,7 +18,7 @@ namespace studyPack {
 
             this.cursorCount = (this.cursorCount + 1) % 40;
 
-            const aButton: Image = img`
+            const aButton: Image = this.cursor ? this.cursor : img`
                 0 0 0 6 6 6 6 6 0 0 0
                 0 6 6 7 7 7 7 7 6 6 0
                 0 6 7 7 1 1 1 7 7 6 0
@@ -30,7 +32,7 @@ namespace studyPack {
                 0 0 8 8 8 8 8 8 8 0 0
                 `;
 
-            const bButton: Image = img`
+            const bButton: Image = this.prevCursor ? this.prevCursor : img`
                 . . . 6 6 6 6 6 . . . 
                 . 6 6 7 7 7 7 7 6 6 . 
                 . 6 7 1 1 1 1 7 7 6 . 
@@ -46,7 +48,7 @@ namespace studyPack {
 
             !this.isFirst && this.image.drawTransparentImage(
                 bButton,
-                this.innerLeft + this.textAreaWidth() + this.unit + offset - this.cursor.width - 16,
+                this.innerLeft + this.textAreaWidth() + this.unit + offset - this.cursor.width - (bButton.width + 4),
                 this.innerTop + this.unit + this.textAreaHeight() + 1 - this.cursorRowHeight()
             )
             this.image.drawTransparentImage(
@@ -67,10 +69,11 @@ namespace studyPack {
      * @param layout The layout to use for the dialog box
      */
     //% blockId=study_pack_show_texts group="StudyPacks"
-    //% block="show long texts %array %layout"
+    //% block="show long texts %array %layout||with prev cursor %prevCursor=screen_image_picker and next cursor %nextCursor=screen_image_picker"
     //% array.shadow="lists_create_with"
     //% array.defl="text"
-    export function showTexts<T>(array: T[], layout: DialogLayout) {
+    //% expandableArgumentMode="toggle"
+    export function showTexts<T>(array: T[], layout: DialogLayout, prevCursor?: Image, nextCursor?: Image) {
         //const strs = array.map((e) => console.inspect(e));
         controller._setUserEventsEnabled(false);
         game.pushScene();
@@ -120,7 +123,7 @@ namespace studyPack {
                 break;
         }
 
-        const dialog = new CustomDialog(width, height);
+        const dialog = new CustomDialog(width, height, null, null, nextCursor, prevCursor);
         const s = sprites.create(dialog.image, -1);
         s.top = top;
         s.left = left;
