@@ -127,7 +127,7 @@ namespace studyPack {
         s.z = 10;
         let sceneSprite: Sprite | null = null;
 
-        const fetchStringElement = (dialog: CustomDialog, strs: T[], index: number, diff: number) => {
+        const fetchStringElement = (dialog: CustomDialog, strs: T[], index: number, diff: number, min: number=0) => {
             index += diff;
             let str = strs[index];
             while (str !== undefined && typeof str !== 'string') {
@@ -140,11 +140,28 @@ namespace studyPack {
                 sceneSprite.left = 0;
                 sceneSprite.z = 1;
             }
-            return {str: str, index: index};
+            if (diff < 0) {
+                let i = index + diff;
+                let elm = strs[i];
+                while (i > 0 && typeof elm !== 'object') {
+                    i += diff;
+                    elm = strs[i];
+                }
+                if (elm) {
+                    if (sceneSprite) sceneSprite.destroy();
+                    const image = (elm as Object) as Image;
+                    sceneSprite = sprites.create(image, -1);
+                    sceneSprite.top = 0;
+                    sceneSprite.left = 0;
+                    sceneSprite.z = 1;
+                }
+            }
+            return {str: str, index: Math.max(index, min)};
         };
 
         let fetchedData = fetchStringElement(dialog, array, -1, 1);
         fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
+        const minStrIndex = fetchedData.index;
         let pressed = true;
         let done = false;
 
@@ -182,10 +199,10 @@ namespace studyPack {
                     dialog.prevPage();
                     dialog.isFirst = dialog.chunkIndex === 0;
                 } else if (fetchedData.index > 0) {
-                    fetchedData = fetchStringElement(dialog, array, fetchedData.index, -1);
+                    fetchedData = fetchStringElement(dialog, array, fetchedData.index, -1, minStrIndex);
                     fetchedData.str !== undefined && dialog.setText('' + fetchedData.str);
                     dialog.chunkIndex = dialog.chunks.length - 1;
-                    dialog.isFirst = fetchedData.index === 0 && dialog.chunkIndex === 0;
+                    dialog.isFirst = fetchedData.index <= minStrIndex && dialog.chunkIndex === 0;
                     dialog.update();
                 }
             }
