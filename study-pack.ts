@@ -226,17 +226,18 @@ namespace studyPack {
      * @param answerLength The maximum number of digits the user can enter (1 - 10)
      */
     //% weight=10 help=game/ask-for-number
-    //% blockId=gameaskfornumberwithtimer block="ask for number %message with timer || and max length %answerLength"
+    //% blockId=gameaskfornumberwithtimer block="ask for number %message with timer || and max length %answerLength, initial duration [msec] %initialDuration"
     //% message.shadow=text
     //% message.defl=""
     //% answerLength.defl="6"
     //% answerLength.min=1
     //% answerLength.max=10
+    //% initialDuration.defl="0"
     //% group="Prompt"
-    export function askForNumberWithTimer(message: any, answerLength = 6): number[] {
+    export function askForNumberWithTimer(message: any, answerLength = 6, initialDuration: number = 0): number[] {
         answerLength = Math.max(0, Math.min(10, answerLength));
         let p = new CustomNumberPrompt();
-        const result = p.show(console.inspect(message), answerLength);
+        const result = p.show(console.inspect(message), answerLength, initialDuration);
         return result;
     }
 
@@ -352,6 +353,7 @@ namespace studyPack {
 
         private startMilliSecs: number;
         private duration: number;
+        private initialDuration: number;
 
         constructor(theme?: game.PromptTheme) {
             if (theme) {
@@ -376,10 +378,11 @@ namespace studyPack {
             this.inputIndex = 0;
         }
 
-        show(message: string, answerLength: number): number[] {
+        show(message: string, answerLength: number, initialDuration: number): number[] {
             this.message = message;
             this.answerLength = answerLength;
             this.inputIndex = 0;
+            this.initialDuration = initialDuration;
 
             controller._setUserEventsEnabled(false);
             game.pushScene()
@@ -525,7 +528,7 @@ namespace studyPack {
         private updateTimer() {
             this.timer.image.fill(this.theme.colorBottomBackground);
             const currentMilliSecs = game.runtime();
-            const diffMilliSecs = currentMilliSecs - this.startMilliSecs;
+            const diffMilliSecs = currentMilliSecs - this.startMilliSecs + this.initialDuration;
             const durationSecs = Math.floor((diffMilliSecs) / 1000);
             let durationSecsStr = durationSecs.toString();
             if (durationSecs < 10) durationSecsStr = `00${durationSecsStr}`;
@@ -624,7 +627,7 @@ namespace studyPack {
 
         private confirm() {
             if (this.cursorRow === 4) {
-                this.duration = game.runtime() - this.startMilliSecs;
+                this.duration = game.runtime() - this.startMilliSecs + this.initialDuration;
                 this.confirmPressed = true;
             } else {
                 if (this.inputIndex >= this.answerLength) return;
